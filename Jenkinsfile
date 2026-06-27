@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         
-        DOCKERHUB_USER    = 'akorolyk001@gmail.com'
+        DOCKERHUB_USER    = 'andriyg1231'
         IMAGE_NAME        = "${DOCKERHUB_USER}/step2-app"
         IMAGE_TAG         = "${BUILD_NUMBER}"
         
