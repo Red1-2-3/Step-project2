@@ -1,18 +1,16 @@
 pipeline {
-    agent { label 'worker' }
+    agent { label 'docker-worker' } // 1. Виправлено Label ноди
 
     environment {
+        DOCKERHUB_USER  = 'andriyg1231'
+        IMAGE_NAME      = "${DOCKERHUB_USER}/step2-app"
+        IMAGE_TAG       = "${BUILD_NUMBER}"
         
-        DOCKERHUB_USER    = 'andriyg1231'
-        IMAGE_NAME        = "${DOCKERHUB_USER}/step2-app"
-        IMAGE_TAG         = "${BUILD_NUMBER}"
-        
-        DOCKERHUB_CREDS   = credentials('dockerhub-credentials')
+        // Переконайся, що в Credentials ID саме 'dockerhub-credentials'
+        DOCKERHUB_CREDS = credentials('dockerhub-credentials')
     }
 
     stages {
-
-        
         stage('Pull Code') {
             steps {
                 echo '=== Pulling source code from GitHub ==='
@@ -21,7 +19,6 @@ pipeline {
             }
         }
 
-        
         stage('Build Docker Image') {
             steps {
                 echo "=== Building Docker image: ${IMAGE_NAME}:${IMAGE_TAG} ==="
@@ -30,11 +27,9 @@ pipeline {
             }
         }
 
-        
         stage('Run Tests') {
             steps {
                 echo '=== Running tests inside Docker container ==='
-                
                 sh "docker build -f Dockerfile.test -t ${IMAGE_NAME}:test ."
                 sh """
                     docker run --rm \
@@ -43,12 +38,9 @@ pipeline {
                 """
             }
         }
-
     }
 
-    
     post {
-
         success {
             echo '=== Tests PASSED — pushing image to Docker Hub ==='
             sh """
@@ -62,12 +54,15 @@ pipeline {
         }
 
         failure {
-            echo 'Tests failed'
+            echo '=== Build/Tests FAILED ==='
         }
 
         cleanup {
-
-            sh "docker rmi ${IMAGE_NAME}:test || true"
+            sh """
+                docker rmi ${IMAGE_NAME}:test || true
+                docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true
+                docker rmi ${IMAGE_NAME}:latest || true
+            """
         }
     }
 }
